@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: order-processing-system
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orderprocessing
+    username: appuser
+    password: secret
+    hikari:
+      connection-init-sql: "SET TIME ZONE 'UTC'"
+      minimum-idle: 10
+      maximum-pool-size: 50
+      connection-timeout: 3000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate # Flyway owns DDL — Hibernate only validates
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 25
+        order_inserts: true
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    sql-migration-prefix: V
+    sql-migration-separator: __
+    sql-migration-suffixes: .sql
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  level:
+    com.bowt.backend.orderprocessing: DEBUG
+    org.flywaydb: INFO
