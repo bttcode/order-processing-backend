@@ -11,6 +11,8 @@ import com.bowt.backend.orderprocessing.domain.model.Order;
 import com.bowt.backend.orderprocessing.domain.model.OrderItem;
 import com.bowt.backend.orderprocessing.domain.model.OrderStatus;
 import com.bowt.backend.orderprocessing.domain.model.Product;
+import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
@@ -28,19 +30,12 @@ import java.util.UUID;
  * implementations in the application layer. For Phase 1 we keep it simple —
  * one service class, registered as both use cases via UseCaseConfiguration.
  */
+@RequiredArgsConstructor
 public class OrderService implements CreateOrderUseCase, QueryOrderUseCase {
 
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final PaymentGateway paymentGateway;
-
-    public OrderService(OrderRepository orderRepository,
-                        ProductRepository productRepository,
-                        PaymentGateway paymentGateway) {
-        this.orderRepository = orderRepository;
-        this.productRepository = productRepository;
-        this.paymentGateway = paymentGateway;
-    }
 
     @Override
     public Order createOrder(CreateOrderCommand command) {

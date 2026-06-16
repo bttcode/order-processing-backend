@@ -24,9 +24,6 @@ public class ProductJpaAdapter implements ProductRepository {
 
     @Override
     public Product save(Product product) {
-        // Must load the existing entity — do NOT create a new one,
-        // or Hibernate will attempt an INSERT instead of UPDATE,
-        // and the @Version field won't be preserved.
         ProductEntity existing = jpaRepo.findByBusinessId(product.getId())
                 .orElseThrow(() -> new IllegalStateException(
                         "Cannot save unknown product: " + product.getId()));

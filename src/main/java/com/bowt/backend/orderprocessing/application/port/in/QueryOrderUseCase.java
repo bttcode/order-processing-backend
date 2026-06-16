@@ -9,5 +9,4 @@ import java.util.UUID;
 public interface QueryOrderUseCase {
     @Transactional(readOnly = true)
     Optional<Order> findById(UUID orderId);
-    // TODO Phase 1 basic only; paginated list query added in Phase 2
 }

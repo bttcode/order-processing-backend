@@ -2,11 +2,13 @@ package com.bowt.backend.orderprocessing.domain.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
 @Setter
 @AllArgsConstructor
+@NoArgsConstructor
 public class Product {
 
     private String id;       // business key e.g. "PROD-001"
@@ -15,8 +17,6 @@ public class Product {
     private Money price;
     private int inventoryQuantity;
     private int version;
-
-    public Product() {}
 
     public boolean hasStock(int requested) {
         return this.inventoryQuantity >= requested;

@@ -25,7 +25,8 @@ public interface CreateOrderUseCase {
             String country
     ) {
         public record OrderItemCommand(
-                String productId, int quantity) {
+                String productId, int quantity
+        ) {
         }
     }
 }
