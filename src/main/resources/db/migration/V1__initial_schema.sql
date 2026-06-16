@@ -2,19 +2,20 @@
 
 CREATE TABLE orders
 (
-    pk                     BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    id                     UUID           NOT NULL,
-    customer_id            VARCHAR(50)    NOT NULL,
-    status                 VARCHAR(30)    NOT NULL,
-    total_amount           DECIMAL(12, 2) NOT NULL,
-    currency               VARCHAR(3)     NOT NULL DEFAULT 'USD',
-    payment_method         VARCHAR(20),
-    payment_transaction_id VARCHAR(100),
-    idempotency_key        UUID UNIQUE,
-    created_at             TIMESTAMP      NOT NULL DEFAULT NOW(),
-    updated_at             TIMESTAMP      NOT NULL DEFAULT NOW(),
-    confirmed_at           TIMESTAMP,
-    version                INTEGER        NOT NULL DEFAULT 0,
+    pk                      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id                      UUID           NOT NULL,
+    customer_id             VARCHAR(50)    NOT NULL,
+    status                  VARCHAR(30)    NOT NULL,
+    total_amount            DECIMAL(12, 2) NOT NULL,
+    currency                VARCHAR(3)     NOT NULL DEFAULT 'USD',
+    payment_method          VARCHAR(20),
+    payment_transaction_id  VARCHAR(100),
+    idempotency_key         UUID UNIQUE,
+    created_at              TIMESTAMP      NOT NULL DEFAULT NOW(),
+    updated_at              TIMESTAMP      NOT NULL DEFAULT NOW(),
+    confirmed_at            TIMESTAMP,
+    estimated_delivery_date DATE,
+    version                 INTEGER        NOT NULL DEFAULT 0,
 
     CONSTRAINT uq_orders_id UNIQUE (id),
     CONSTRAINT chk_order_status CHECK (status IN (
