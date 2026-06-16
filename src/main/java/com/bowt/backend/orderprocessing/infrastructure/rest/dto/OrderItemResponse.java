@@ -1,10 +1,12 @@
 package com.bowt.backend.orderprocessing.infrastructure.rest.dto;
 
+import java.math.BigDecimal;
+
 public record OrderItemResponse(
         String productId,
         String productName,
         int quantity,
-        java.math.BigDecimal unitPrice,
-        java.math.BigDecimal totalPrice
+        BigDecimal unitPrice,
+        BigDecimal totalPrice
 ) {
 }

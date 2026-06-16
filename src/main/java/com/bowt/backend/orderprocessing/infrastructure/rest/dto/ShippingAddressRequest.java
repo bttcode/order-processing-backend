@@ -8,4 +8,5 @@ public record ShippingAddressRequest(
         @NotBlank String state,
         @NotBlank String postalCode,
         @NotBlank String country
-) {}
+) {
+}
