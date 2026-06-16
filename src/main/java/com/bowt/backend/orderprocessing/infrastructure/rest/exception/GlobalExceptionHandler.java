@@ -1,6 +1,7 @@
 package com.bowt.backend.orderprocessing.infrastructure.rest.exception;
 
 import com.bowt.backend.orderprocessing.domain.exception.InsufficientInventoryException;
+import com.bowt.backend.orderprocessing.domain.exception.InvalidOrderStateException;
 import com.bowt.backend.orderprocessing.domain.exception.PaymentFailedException;
 import org.springframework.http.*;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -65,6 +66,25 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.unprocessableEntity().body(problem);
     }
 
-    // TODO: add handler for InvalidOrderStateException → 409
-    // TODO: add catch-all → 500
+    // Invalid order state → 409
+    @ExceptionHandler(InvalidOrderStateException.class)
+    public ResponseEntity<ProblemDetail> handleOrderState(InvalidOrderStateException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.CONFLICT);
+        problem.setType(URI.create("https://api.bowt.backend.com/errors/order-state-invalid"));
+        problem.setTitle("Order State Invalid");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return ResponseEntity.unprocessableEntity().body(problem);
+    }
+
+    // Generic error → 500
+    @ExceptionHandler(RuntimeException.class)
+    public ResponseEntity<ProblemDetail> handleGeneric(RuntimeException ex) {
+        ProblemDetail problem = ProblemDetail.forStatus(HttpStatus.INTERNAL_SERVER_ERROR);
+        problem.setType(URI.create("https://api.bowt.backend.com/errors/internal-server-error"));
+        problem.setTitle("Internal Server Error");
+        problem.setDetail(ex.getMessage());
+        problem.setProperty("timestamp", Instant.now());
+        return ResponseEntity.unprocessableEntity().body(problem);
+    }
 }
