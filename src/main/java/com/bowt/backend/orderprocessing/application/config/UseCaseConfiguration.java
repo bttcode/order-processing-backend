@@ -3,9 +3,9 @@ package com.bowt.backend.orderprocessing.application.config;
 import com.bowt.backend.orderprocessing.application.port.in.CreateOrderUseCase;
 import com.bowt.backend.orderprocessing.application.port.in.QueryOrderUseCase;
 import com.bowt.backend.orderprocessing.application.port.out.OrderRepository;
-import com.bowt.backend.orderprocessing.application.port.out.PaymentGateway;
-import com.bowt.backend.orderprocessing.application.port.out.ProductRepository;
+import com.bowt.backend.orderprocessing.domain.service.InventoryService;
 import com.bowt.backend.orderprocessing.domain.service.OrderService;
+import com.bowt.backend.orderprocessing.domain.service.PaymentService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
@@ -26,17 +26,18 @@ public class UseCaseConfiguration {
     @Bean
     public CreateOrderUseCase createOrderUseCase(
             OrderRepository orderRepository,
-            ProductRepository productRepository,
-            PaymentGateway paymentGateway) {
-        return new OrderService(orderRepository, productRepository, paymentGateway);
+            InventoryService inventoryService,
+            PaymentService paymentService) {
+        return new OrderService(orderRepository, inventoryService, paymentService);
     }
 
     @Bean
     public QueryOrderUseCase queryOrderUseCase(
             OrderRepository orderRepository,
-            ProductRepository productRepository,
-            PaymentGateway paymentGateway) {
-        // Same instance — both ports resolved to one service in Phase 1
-        return new OrderService(orderRepository, productRepository, paymentGateway);
+            InventoryService inventoryService,
+            PaymentService paymentService) {
+        // Same OrderService instance satisfies both ports.
+        // Acceptable in Phase 2; Phase 4 may split them if the class grows.
+        return new OrderService(orderRepository, inventoryService, paymentService);
     }
 }
