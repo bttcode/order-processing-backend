@@ -1,5 +1,6 @@
 package com.bowt.backend.orderprocessing.domain.model;
 
+import com.bowt.backend.orderprocessing.domain.model.enumeration.Currency;
 import lombok.Getter;
 
 import java.math.BigDecimal;
@@ -8,7 +9,7 @@ import java.util.Objects;
 
 /**
  * Immutable monetary value. Always stored and compared at 2 decimal places.
- * Currency defaults to USD. Multi-currency support is out of scope for Phase 1.
+ * Currency defaults to USD. Multi-currency support is out of scope.
  */
 @Getter
 public final class Money {
@@ -16,16 +17,16 @@ public final class Money {
     public static final Money ZERO = new Money(BigDecimal.ZERO);
 
     private final BigDecimal amount;
-    private final String currency;
+    private final Currency currency;
 
-    private Money(BigDecimal amount, String currency) {
+    private Money(BigDecimal amount, Currency currency) {
         // Always normalize to 2 decimal places — prevents 0.1+0.2 surprises
         this.amount = amount.setScale(2, RoundingMode.HALF_UP);
         this.currency = Objects.requireNonNull(currency);
     }
 
     private Money(BigDecimal amount) {
-        this(amount, "USD");
+        this(amount, Currency.USD);
     }
 
     public static Money of(BigDecimal amount) {
@@ -55,7 +56,7 @@ public final class Money {
     }
 
     private void requireSameCurrency(Money other) {
-        if (!this.currency.equals(other.currency)) {
+        if (this.currency != other.currency) {
             throw new IllegalArgumentException(
                     "Currency mismatch: " + this.currency + " vs " + other.currency);
         }
@@ -70,7 +71,7 @@ public final class Money {
             return false;
         }
         // compareTo instead of equals — BigDecimal.equals is scale-sensitive
-        return amount.compareTo(m.amount) == 0 && currency.equals(m.currency);
+        return amount.compareTo(m.amount) == 0 && currency == m.currency;
     }
 
     @Override
