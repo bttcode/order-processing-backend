@@ -10,17 +10,18 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 
 /**
- * AOP retry aspect — wraps any method annotated with {@link Retryable}.
- *
- * <p><b>[OI-9] Threading constraint:</b> {@code Thread.sleep()} blocks the
- * carrier thread. This aspect is therefore intentionally restricted to
- * <em>synchronous</em> service methods (e.g. {@code InventoryService.reserveInventory},
- * {@code PaymentService.authorize}). The reactive pipeline in
- * {@code OrderService.processOrderReactive} must NOT route through this aspect
- * — it uses {@code Mono.retryWhen()} directly.
- *
- * <p>Retry condition: the thrown exception must be assignment-compatible with
- * at least one of the types declared in {@link Retryable#on()}.
+ * AR-5 / ADR-003. Synchronous retry ONLY.
+ * <p>
+ * [OI-9] Thread.sleep() below blocks the carrier thread. This aspect must never be applied
+ * to a method invoked from OrderService.processOrderReactive() (the Mono pipeline) — doing
+ * so would park a Reactor / boundedElastic thread for the full backoff duration and defeat
+ * the non-blocking model. Enforcement is a code-review gate, not a compile-time check:
+ * grep for @Retryable usages and confirm none sit on the reactive call graph before merging.
+ * <p>
+ * [P10 fix] Retryable.on() defaults to Exception.class. Without the explicit type check below,
+ * every exception (including InsufficientInventoryException, which must never be retried)
+ * would be retried. isAssignableFrom also correctly matches Hibernate's StaleObjectStateException,
+ * a subclass of jakarta.persistence.OptimisticLockException.
  */
 @Aspect
 @Component
@@ -31,30 +32,31 @@ public class RetryAspect {
     public Object retry(ProceedingJoinPoint pjp, Retryable retryable) throws Throwable {
         int maxAttempts = retryable.maxAttempts();
         long delayMs = retryable.delayMs();
-        Class<? extends Exception>[] retryOn = retryable.on();
+        Class<? extends Throwable>[] retryOn = retryable.on();
 
-        String methodName = pjp.getSignature().toShortString();
-
+        Throwable lastFailure = null;
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
                 return pjp.proceed();
-            } catch (Exception ex) {
+            } catch (Throwable ex) {
+                lastFailure = ex;
                 boolean shouldRetry = Arrays.stream(retryOn)
                         .anyMatch(type -> type.isAssignableFrom(ex.getClass()));
 
                 if (!shouldRetry || attempt == maxAttempts) {
-                    log.warn("[RetryAspect] {}: giving up after {}/{} attempts — {}",
-                            methodName, attempt, maxAttempts, ex.getMessage());
+                    if (!shouldRetry) {
+                        log.debug("Not retrying {} — not in declared retry set {}",
+                                ex.getClass().getSimpleName(), Arrays.toString(retryOn));
+                    }
                     throw ex;
                 }
 
-                long pause = delayMs * attempt;   // linear back-off
-                log.warn("[RetryAspect] {}: attempt {}/{} failed ({}), retrying in {} ms",
-                        methodName, attempt, maxAttempts, ex.getClass().getSimpleName(), pause);
-                Thread.sleep(pause);
+                log.warn("Retry attempt {}/{} for {} after {}", attempt, maxAttempts,
+                        pjp.getSignature().toShortString(), ex.getClass().getSimpleName());
+                Thread.sleep(delayMs * attempt); // linear backoff — synchronous path only, see class Javadoc
             }
         }
-        // Unreachable: the loop always throws or returns before reaching here.
-        throw new IllegalStateException("RetryAspect: unreachable code path");
+        // Unreachable — loop always returns or throws — but keep the compiler happy.
+        throw new IllegalStateException("RetryAspect exhausted without resolution", lastFailure);
     }
 }
