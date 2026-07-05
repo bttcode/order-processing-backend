@@ -3,14 +3,7 @@ package com.bowt.backend.orderprocessing.domain.annotation;
 import java.lang.annotation.*;
 
 /**
- * Marks a method for automatic retry on the listed exception types.
- *
- * <p>Applied by {@code RetryAspect} (infrastructure layer) — this annotation
- * lives in {@code domain/annotation/} so it carries zero framework imports,
- * keeping the domain dependency-free while still being reachable by the
- * {@code @Around} advice.
- *
- * <p><b>Important [OI-9]:</b> {@code RetryAspect} uses {@code Thread.sleep()}
+ * {@code RetryAspect} uses {@code Thread.sleep()}
  * which blocks the carrier thread. Annotate only synchronous service methods.
  * Reactive call-sites must use {@code Mono.retryWhen()} or Resilience4j
  * {@code RetryOperator} instead.
@@ -32,8 +25,7 @@ public @interface Retryable {
 
     /**
      * Base delay in milliseconds between attempts.
-     * The actual pause is {@code delayMs * attemptNumber} (linear backoff
-     * shown here; swap for exponential in production as noted in AR-5).
+     * The actual pause is {@code delayMs * attemptNumber}.
      */
     long delayMs() default 100;
 }

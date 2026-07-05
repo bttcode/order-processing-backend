@@ -1,6 +1,6 @@
 package com.bowt.backend.orderprocessing.domain.exception;
 
-import com.bowt.backend.orderprocessing.domain.model.OrderStatus;
+import com.bowt.backend.orderprocessing.domain.model.enumeration.OrderStatus;
 
 import java.util.UUID;
 
