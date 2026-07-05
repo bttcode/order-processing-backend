@@ -21,7 +21,7 @@ public class Order {
     private UUID id;
     private String customerId;
     private OrderStatus status;
-    private final List<OrderItem> items;
+    private List<OrderItem> items;
     private PaymentMethod paymentMethod;
     private String paymentTransactionId; // TODO: why need this?
     private ShippingAddress shippingAddress;
@@ -35,7 +35,6 @@ public class Order {
      * Do not use in business logic.
      */
     Order() {
-        this.items = new ArrayList<>();
     }
 
     /**
@@ -48,6 +47,7 @@ public class Order {
         this.id = Objects.requireNonNull(id, "id must not be null");
         this.customerId = Objects.requireNonNull(customerId, "customerId must not be null");
         this.status = OrderStatus.PENDING_VALIDATION;
+        this.items = new ArrayList<>();
         this.createdAt = Instant.now();
         this.updatedAt = Instant.now();
     }
@@ -60,6 +60,7 @@ public class Order {
     public static Order reconstruct(UUID id,
                                     String customerId,
                                     OrderStatus status,
+                                    List<OrderItem> items,
                                     PaymentMethod paymentMethod,
                                     String paymentTransactionId,
                                     ShippingAddress shippingAddress,
@@ -71,6 +72,7 @@ public class Order {
         o.id = id;
         o.customerId = customerId;
         o.status = status;
+        o.items = items;
         o.paymentMethod = paymentMethod;
         o.paymentTransactionId = paymentTransactionId;
         o.shippingAddress = shippingAddress;

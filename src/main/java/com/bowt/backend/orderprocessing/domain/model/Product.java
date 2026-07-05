@@ -6,19 +6,32 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Getter
-@Setter
 @AllArgsConstructor
-@NoArgsConstructor
 public class Product {
 
-    private String id;       // business key e.g. "PROD-001"
-    private String sku;
-    private String name;
-    private Money price;
+    private final String id; // business key e.g. "PROD-001"
+    private final String sku;
+    private final String name;
+    private final Money price;
     private int inventoryQuantity;
-    private int version;
 
-    public boolean hasStock(int requested) {
-        return this.inventoryQuantity >= requested;
+    public boolean isAvailable(int requested) {
+        return inventoryQuantity >= requested;
+    }
+
+    public boolean deductStock(int requested) {
+        if (requested <= 0 || !isAvailable(requested)) {
+            return false;
+        }
+        inventoryQuantity -= requested;
+        return true;
+    }
+
+    public boolean restoreStock(int requested) {
+        if (requested <= 0) {
+            return false;
+        }
+        inventoryQuantity += requested;
+        return true;
     }
 }
