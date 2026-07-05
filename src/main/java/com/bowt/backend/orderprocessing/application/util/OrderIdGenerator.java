@@ -1,4 +1,4 @@
-package com.bowt.backend.orderprocessing.domain.util;
+package com.bowt.backend.orderprocessing.application.util;
 
 import com.fasterxml.uuid.Generators;
 import com.fasterxml.uuid.impl.TimeBasedEpochGenerator;
