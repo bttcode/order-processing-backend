@@ -1,73 +1,141 @@
-domain/                                   # zero framework deps — verify via ArchUnit + a Spring-less test run
-├── model/
-│   ├── Order.java                        # NO @Setter; status mutates only via transitionTo()
-│   ├── OrderItem.java
-│   ├── OrderStatus.java
-│   ├── Money.java
-│   ├── Product.java                      # add deductStock()/restoreStock() (P9) — keeps stock math in the aggregate
-│   └── ShippingAddress.java
-├── factory/
-│   └── OrderFactory.java                 # Pattern 2 — pure construction logic, no I/O, no Spring
-├── decorator/
-│   ├── OrderEnhancement.java
-│   ├── GiftWrappingDecorator.java
-│   ├── InsuranceDecorator.java
-│   └── PriorityHandlingDecorator.java    # Pattern 4 — pure, chainable, no I/O
-├── event/
-│   ├── OrderEvent.java
-│   └── OrderEventPublisher.java          # outgoing port interface only — no listener impls here
-├── exception/
-│   ├── InsufficientInventoryException.java
-│   ├── InvalidOrderStateException.java
-│   └── PaymentFailedException.java
-└── annotation/
-└── Retryable.java                        # marker annotation, zero Spring import — OK to keep here
-
-application/                              # use-case orchestration; Spring annotations allowed
-├── port/
-│   ├── in/
-│   │   ├── CreateOrderUseCase.java
-│   │   ├── QueryOrderUseCase.java
-│   │   └── CancelOrderUseCase.java       # MISSING — required for FR-6, build now
-│   └── out/
-│       ├── OrderRepository.java
-│       ├── ProductRepository.java
-│       ├── PaymentGateway.java           # Pattern 5 (Adapter) — provider abstraction
-│       ├── PaymentStrategy.java          # Pattern 1 (Strategy) — method abstraction, separate from above
-│       └── NotificationService.java      # MISSING — outgoing port for Observer dispatch
-├── service/                              # ← InventoryService and PaymentService MOVE HERE (P2 fix, Option A)
-│   ├── OrderService.java                 # implements CreateOrderUseCase + QueryOrderUseCase + CancelOrderUseCase
-│   ├── InventoryService.java             # @Transactional(REQUIRES_NEW, REPEATABLE_READ) lives here now, legally
-│   ├── PaymentService.java               # @Transactional / executor wiring lives here now, legally
-│   └── AuditService.java                 # @Transactional(REQUIRES_NEW)
-├── listener/
-│   ├── WarehouseListener.java            # Pattern 3 (Observer) — these DO I/O (notify external systems)
-│   ├── AccountingListener.java           # so they belong here, not in domain/, registered as Spring beans
-│   └── CustomerNotificationListener.java
-└── config/
-└── UseCaseConfiguration.java             # fix: ONE OrderService @Bean, exposed as both in-ports
-
-infrastructure/
-├── persistence/
-│   ├── util/
-│   │   └── OrderIdGenerator.java         # MOVED here from domain/util (P1/I-1 fix)
-│   ├── jpa/     (OrderEntity, ProductEntity, OrderItemEntity, repositories)
-│   ├── adapter/ (OrderJpaAdapter, ProductJpaAdapter)
-│   ├── mapper/  (OrderMapper, ProductMapper)
-│   └── config/  (DatabaseConfiguration)
-├── payment/
-│   ├── MockPaymentGateway.java           # MOVED out of persistence/payment (I-5 fix)
-│   ├── StripePaymentAdapter.java         # second PaymentGateway impl — needed for the adapter-swap demo
-│   ├── CreditCardPaymentStrategy.java    # PaymentStrategy impls (Pattern 1)
-│   ├── PayPalPaymentStrategy.java
-│   ├── CryptoPaymentStrategy.java
-│   └── PaymentStrategyFactory.java       # resolves strategy by PaymentMethod enum
-├── notification/
-│   └── EventNotificationAdapter.java     # implements domain's OrderEventPublisher, dispatches to listener/ via @Async
-├── config/
-│   ├── ExecutorConfiguration.java
-│   └── RetryAspect.java
-└── rest/
-├── OrderController.java
-├── dto/
-└── exception/GlobalExceptionHandler.java
+.
+├── docker-compose.yml
+├── pom.xml
+└── src
+    ├── main
+    │   ├── java
+    │   │   └── com
+    │   │       └── bowt
+    │   │           └── backend
+    │   │               └── orderprocessing
+    │   │                   ├── OrderProcessingApplication.java
+    │   │                   ├── application
+    │   │                   │   ├── config
+    │   │                   │   │   ├── AsyncConfiguration.java
+    │   │                   │   │   └── UseCaseConfiguration.java
+    │   │                   │   ├── listener
+    │   │                   │   │   ├── AccountingListener.java
+    │   │                   │   │   ├── CustomerNotificationListener.java
+    │   │                   │   │   └── WarehouseListener.java
+    │   │                   │   ├── port
+    │   │                   │   │   ├── in
+    │   │                   │   │   │   ├── CancelOrderUseCase.java
+    │   │                   │   │   │   ├── CreateOrderUseCase.java
+    │   │                   │   │   │   └── QueryOrderUseCase.java
+    │   │                   │   │   └── out
+    │   │                   │   │       ├── IdempotencyStore.java
+    │   │                   │   │       ├── NotificationService.java
+    │   │                   │   │       ├── OrderEventListener.java
+    │   │                   │   │       ├── OrderEventPublisher.java
+    │   │                   │   │       ├── OrderRepository.java
+    │   │                   │   │       ├── PaymentGateway.java
+    │   │                   │   │       └── ProductRepository.java
+    │   │                   │   ├── service
+    │   │                   │   │   ├── AuditService.java
+    │   │                   │   │   ├── InventoryService.java
+    │   │                   │   │   ├── OrderService.java
+    │   │                   │   │   └── PaymentService.java
+    │   │                   │   └── util
+    │   │                   │       └── OrderIdGenerator.java
+    │   │                   ├── domain
+    │   │                   │   ├── annotation
+    │   │                   │   │   └── Retryable.java
+    │   │                   │   ├── event
+    │   │                   │   │   └── OrderEvent.java
+    │   │                   │   ├── exception
+    │   │                   │   │   ├── InsufficientInventoryException.java
+    │   │                   │   │   ├── InvalidOrderStateException.java
+    │   │                   │   │   ├── PaymentFailedException.java
+    │   │                   │   │   └── ProductNotFoundException.java
+    │   │                   │   ├── factory
+    │   │                   │   │   └── OrderFactory.java
+    │   │                   │   └── model
+    │   │                   │       ├── Money.java
+    │   │                   │       ├── Order.java
+    │   │                   │       ├── OrderItem.java
+    │   │                   │       ├── Product.java
+    │   │                   │       ├── ShippingAddress.java
+    │   │                   │       └── enumeration
+    │   │                   │           ├── Currency.java
+    │   │                   │           ├── OrderStatus.java
+    │   │                   │           ├── OrderType.java
+    │   │                   │           └── PaymentMethod.java
+    │   │                   └── infrastructure
+    │   │                       ├── config
+    │   │                       │   ├── ExecutorConfiguration.java
+    │   │                       │   └── RetryAspect.java
+    │   │                       ├── notification
+    │   │                       │   └── EventNotificationAdapter.java
+    │   │                       ├── payment
+    │   │                       │   ├── CreditCardPaymentStrategy.java
+    │   │                       │   ├── CryptoPaymentStrategy.java
+    │   │                       │   ├── MockPaymentGateway.java
+    │   │                       │   ├── PayPalPaymentStrategy.java
+    │   │                       │   ├── PaymentStrategy.java
+    │   │                       │   └── PaymentStrategyFactory.java
+    │   │                       ├── persistence
+    │   │                       │   ├── DataSeeder.java
+    │   │                       │   ├── adapter
+    │   │                       │   │   ├── IdempotencyJpaAdapter.java
+    │   │                       │   │   ├── OrderJpaAdapter.java
+    │   │                       │   │   └── ProductJpaAdapter.java
+    │   │                       │   ├── jpa
+    │   │                       │   │   ├── IdempotencyKeyEntity.java
+    │   │                       │   │   ├── JpaIdempotencyKeyRepository.java
+    │   │                       │   │   ├── JpaOrderItemRepository.java
+    │   │                       │   │   ├── JpaOrderRepository.java
+    │   │                       │   │   ├── JpaProductRepository.java
+    │   │                       │   │   ├── OrderEntity.java
+    │   │                       │   │   ├── OrderItemEntity.java
+    │   │                       │   │   ├── ProductEntity.java
+    │   │                       │   │   └── ShippingAddressEmbeddable.java
+    │   │                       │   ├── mapper
+    │   │                       │   │   ├── OrderMapper.java
+    │   │                       │   │   └── ProductMapper.java
+    │   │                       │   └── scheduled
+    │   │                       │       └── IdempotencyCleanupJob.java
+    │   │                       └── rest
+    │   │                           ├── config
+    │   │                           │   ├── OpenApiConfiguration.java
+    │   │                           │   └── WebMvcConfiguration.java
+    │   │                           ├── dto
+    │   │                           │   ├── CancelOrderRequest.java
+    │   │                           │   ├── CancellationResponse.java
+    │   │                           │   ├── CreateOrderRequest.java
+    │   │                           │   ├── OrderItemRequest.java
+    │   │                           │   ├── OrderItemResponse.java
+    │   │                           │   └── ShippingAddressRequest.java
+    │   │                           ├── exception
+    │   │                           │   └── GlobalExceptionHandler.java
+    │   │                           ├── idempotency
+    │   │                           │   └── IdempotencyHandler.java
+    │   │                           ├── ratelimit
+    │   │                           │   ├── DeprecationInterceptor.java
+    │   │                           │   └── RateLimitInterceptor.java
+    │   │                           ├── security
+    │   │                           │   └── ApiKeyInterceptor.java
+    │   │                           ├── v1
+    │   │                           │   ├── OrderControllerV1.java
+    │   │                           │   ├── OrderResponseMapperV1.java
+    │   │                           │   └── OrderResponseV1.java
+    │   │                           └── v2
+    │   │                               ├── OrderControllerV2.java
+    │   │                               ├── OrderListResponseV2.java
+    │   │                               ├── OrderResponseMapperV2.java
+    │   │                               ├── OrderResponseV2.java
+    │   │                               └── PageMetadata.java
+    │   └── resources
+    │       ├── application-local.yml
+    │       ├── application-prod.yml
+    │       ├── application.yml
+    │       └── db
+    │           └── migration
+    │               └── V1__initial_schema.sql
+    └── test
+        ├── java
+        │   └── com
+        │       └── bowt
+        │           └── backend
+        │               └── orderprocessing
+        └── resources
+            └── application-test.yml
