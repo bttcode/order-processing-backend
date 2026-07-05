@@ -9,23 +9,29 @@ import org.springframework.stereotype.Component;
 public class ProductMapper {
 
     public Product toDomain(ProductEntity entity) {
-        Product p = new Product();
-        p.setId(entity.getId());
-        p.setSku(entity.getSku());
-        p.setName(entity.getName());
-        p.setPrice(Money.of(entity.getPrice()));
-        p.setInventoryQuantity(entity.getInventoryQuantity());
-        p.setVersion(entity.getVersion());
-        return p;
+        return new Product(entity.getId(), entity.getSku(), entity.getName(),
+                Money.of(entity.getPrice()), entity.getInventoryQuantity());
     }
 
-    public ProductEntity toEntity(Product product, ProductEntity existing) {
-        // Update existing entity (never create a new one for inventory updates
-        // — must preserve the BIGINT pk and @Version field)
-        existing.setInventoryQuantity(product.getInventoryQuantity());
-        existing.setName(product.getName());
-        existing.setPrice(product.getPrice().getAmount());
-        // id, sku, pk — never change after creation
-        return existing;
+    public ProductEntity toNewEntity(Product product) {
+        ProductEntity entity = new ProductEntity();
+        entity.setId(product.getId());
+        entity.setSku(product.getSku());
+        entity.setName(product.getName());
+        entity.setPrice(product.getPrice().getAmount());
+        entity.setInventoryQuantity(product.getInventoryQuantity());
+        return entity;
+    }
+
+    /**
+     * Updates fields that legitimately change post-creation (inventory, price, name).
+     * Deliberately does NOT touch id, sku, or pk — those are immutable business/surrogate
+     * keys. Preserves the existing entity's @Version so Hibernate's optimistic-lock
+     * UPDATE ... WHERE version = ? still fires against the correct value (ADR-003).
+     */
+    public void updateEntity(ProductEntity entity, Product product) {
+        entity.setName(product.getName());
+        entity.setPrice(product.getPrice().getAmount());
+        entity.setInventoryQuantity(product.getInventoryQuantity());
     }
 }

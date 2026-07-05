@@ -1,12 +1,17 @@
 package com.bowt.backend.orderprocessing.infrastructure.persistence.jpa;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 
+/**
+ * BIGSERIAL surrogate pk (internal, never leaves infrastructure) +
+ * VARCHAR(50) business key `id` (e.g. "PROD-001", used everywhere else).
+ */
 @Entity
 @Table(name = "products")
 @Getter
@@ -18,21 +23,23 @@ public class ProductEntity {
     @Column(name = "pk", insertable = false, updatable = false)
     private Long pk;
 
+    @NotNull
     @Column(name = "id", nullable = false, unique = true, updatable = false)
-    private String id;   // business key
+    private String id;
 
+    @NotNull
     @Column(name = "sku", nullable = false, unique = true)
     private String sku;
 
+    @NotNull
     @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "description")
-    private String description;
-
+    @NotNull
     @Column(name = "price", nullable = false)
     private BigDecimal price;
 
+    @NotNull
     @Column(name = "inventory_quantity", nullable = false)
     private Integer inventoryQuantity;
 
@@ -46,14 +53,21 @@ public class ProductEntity {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    public ProductEntity() {
+    }
+
     @PrePersist
     void onCreate() {
-        if (createdAt == null) createdAt = Instant.now();
-        if (updatedAt == null) updatedAt = Instant.now();
+        Instant now = Instant.now();
+        this.createdAt = now;
+        this.updatedAt = now;
+        if (this.version == null) {
+            this.version = 0;
+        }
     }
 
     @PreUpdate
     void onUpdate() {
-        updatedAt = Instant.now();
+        this.updatedAt = Instant.now();
     }
 }
