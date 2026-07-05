@@ -1,5 +1,3 @@
--- V1__initial_schema.sql
-
 CREATE TABLE orders
 (
     pk                      BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -11,6 +9,11 @@ CREATE TABLE orders
     payment_method          VARCHAR(20),
     payment_transaction_id  VARCHAR(100),
     idempotency_key         UUID UNIQUE,
+    shipping_street         VARCHAR(200)   NOT NULL,
+    shipping_city           VARCHAR(100)   NOT NULL,
+    shipping_state          VARCHAR(50)    NOT NULL,
+    shipping_postal_code    VARCHAR(20)    NOT NULL,
+    shipping_country        VARCHAR(2)     NOT NULL,
     created_at              TIMESTAMP      NOT NULL DEFAULT NOW(),
     updated_at              TIMESTAMP      NOT NULL DEFAULT NOW(),
     confirmed_at            TIMESTAMP,
@@ -62,6 +65,7 @@ CREATE TABLE idempotency_keys
     key             UUID PRIMARY KEY,
     response_body   TEXT      NOT NULL,
     response_status INTEGER   NOT NULL,
+    operation_hash VARCHAR(64) NOT NULL DEFAULT '',
     created_at      TIMESTAMP NOT NULL DEFAULT NOW(),
     expires_at      TIMESTAMP NOT NULL
 );
@@ -82,5 +86,5 @@ CREATE INDEX idx_order_item_order_pk ON order_items (order_pk);
 CREATE INDEX idx_order_item_product_pk ON order_items (product_pk);
 CREATE INDEX idx_order_item_product_id ON order_items (product_id);
 
--- idempotency cleanup
+-- idempotency clean-up
 CREATE INDEX idx_idempotency_expires ON idempotency_keys (expires_at);
