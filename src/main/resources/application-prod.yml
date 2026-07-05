@@ -1,0 +1,36 @@
+spring:
+  datasource:
+    # No defaults, deliberately. If DB_URL/DB_USERNAME/DB_PASSWORD are unset, startup
+    # fails loudly instead of silently falling back to the local-dev credentials in
+    # application-local.yml — that fallback is exactly the failure mode NFR-6 flags as
+    # unsafe if this file were ever copy-pasted between environments.
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+  jpa:
+    show-sql: false
+
+management:
+  endpoint:
+    health:
+      # NFR-6: do not leak DB connection details, disk paths, or component internals to
+      # unauthenticated callers in prod. `when-authorized` requires either an authenticated
+      # principal or `management.endpoint.health.roles` — since this project has no real
+      # auth layer (NFR-6 uses a static API key, not a Spring Security principal), the
+      # practical effect is "never show details externally"; pair this with keeping
+      # /actuator off the public ingress entirely.
+      show-details: when-authorized
+
+payment:
+  mock:
+    # A "mock" gateway with a nonzero failure rate has no place in prod — this profile
+    # pins it to 0.0 regardless of what a shared application.yml default might say, so a
+    # forgotten load-test override can't leak into a prod deploy.
+    failure-rate: 0.0
+
+logging:
+  level:
+    root: WARN
+    com.bowt.backend.orderprocessing: INFO
+    org.flywaydb: INFO

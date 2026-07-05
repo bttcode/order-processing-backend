@@ -2,27 +2,48 @@ spring:
   application:
     name: order-processing-system
 
+  # Default profile if none is passed on the command line / env var. Explicit rather than
+  # relying on Spring's implicit "default" profile, so it's visible in one place that local
+  # dev is the assumed starting point — NOT prod. Override with
+  # `--spring.profiles.active=prod` or `SPRING_PROFILES_ACTIVE=prod` for anything else.
+  profiles:
+    default: local
+
   datasource:
-    url: jdbc:postgresql://localhost:5432/orderprocessing
-    username: appuser
-    password: secret
     hikari:
       connection-init-sql: "SET TIME ZONE 'UTC'"
+      # NFR-2 (02-architecture.md): "minimum 10, maximum 50 connections per instance."
+      # The uploaded file had maximum-pool-size: 60 — contradicts the spec outright, and
+      # at 5 app instances x 60 = 300 connections you'd exceed PostgreSQL's default
+      # max_connections (100) well before hitting the app-level limit.
       minimum-idle: 10
       maximum-pool-size: 50
+      # Reduced from 10000ms: under real overload, a caller blocking 10s for a connection
+      # just adds latency on top of an already-overloaded system. NFR-1 wants graceful
+      # degradation (503), not slow degradation. Fail fast, let the caller/LB retry or
+      # let RateLimitInterceptor's 429 have already stopped the request upstream.
       connection-timeout: 3000
+      validation-timeout: 1000
+      # NFR-5 observability: surfaces `hikaricp.connections.*` leak warnings in logs if a
+      # connection is held > 30s without being returned — catches leaks before they exhaust
+      # the pool in production, where it would otherwise present as a mysterious 503 storm.
+      leak-detection-threshold: 30000
 
   jpa:
     hibernate:
-      ddl-auto: validate # Flyway owns DDL — Hibernate only validates
-    show-sql: true
+      ddl-auto: validate # Flyway owns DDL — Hibernate only validates (ADR-001 decision)
+    # Was missing entirely. Spring Boot's default is `true`, which keeps the DB connection
+    # open for the full HTTP request lifecycle (including view rendering) rather than just
+    # the transaction. This is a pure REST API with no server-side views — there is nothing
+    # to gain and a real cost: connections held longer than necessary directly reduces
+    # effective HikariCP throughput under the 10,000 orders/sec target (NFR-1).
+    open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           batch_size: 25
         order_inserts: true
-        format_sql: true
 
   flyway:
     enabled: true
@@ -31,18 +52,55 @@ spring:
     sql-migration-separator: __
     sql-migration-suffixes: .sql
 
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+payment:
+  mock:
+    failure-rate: 0.0
+
+idempotency:
+  cleanup:
+    cron: "0 0 * * * *" # hourly — see IdempotencyCleanupJob, OI-6
+
+security:
+  # NFR-6: "Keys are statically configured in application.yml for this scope." The prior
+  # file never set this, so ApiKeyInterceptor silently fell back to its hardcoded
+  # `demo-key-001` default in every environment, dev or otherwise. Comma-separated list;
+  # override per-environment (see application-prod.yml).
+  api-keys: ${API_KEYS:demo-key-001,demo-key-002}
+
 management:
   endpoints:
     web:
       exposure:
-        include: health,info
+        # Added `prometheus` — required for NFR-5's `/actuator/prometheus` scrape target.
+        # `health` alone does not expose it even with micrometer-registry-prometheus on
+        # the classpath; it must be explicitly listed here.
+        include: health,info,prometheus
   endpoint:
     health:
-      show-details: always
+      # Enables /actuator/health/liveness and /actuator/health/readiness (03-performance.md
+      # NFR-5). Without this flag those paths 404 even though the top-level /actuator/health
+      # works. Readiness additionally reflects DB connectivity via the `db` health indicator
+      # Spring Boot auto-registers from the datasource.
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
 
 logging:
   level:
-    com.bowt.backend.orderprocessing: DEBUG
     org.flywaydb: INFO
-    org.hibernate.SQL: DEBUG
-    org.hibernate.orm.jdbc.bind: TRACE
+  # Root/package DEBUG levels, show-sql, and hibernate.format_sql are intentionally NOT
+  # set here — they belong in application-local.yml only. Left in this shared file, they
+  # would apply to prod too and silently cost 10-30%+ throughput at load, corrupting every
+  # Phase 3 JMeter/EXPLAIN ANALYZE result without an obvious cause.

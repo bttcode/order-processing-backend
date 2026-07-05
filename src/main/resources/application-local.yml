@@ -1,0 +1,24 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/orderprocessing
+    username: appuser
+    password: secret
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+management:
+  endpoint:
+    health:
+      # Safe only in local/dev: exposes DB details, disk space, etc. in the health response.
+      # application-prod.yml overrides this to `when-authorized` — see NFR-6.
+      show-details: always
+
+logging:
+  level:
+    com.bowt.backend.orderprocessing: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.orm.jdbc.bind: TRACE

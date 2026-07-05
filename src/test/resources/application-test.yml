@@ -1,0 +1,19 @@
+spring:
+  # Datasource URL/username/password intentionally omitted: integration tests (TEST-2)
+  # override these at runtime via @DynamicPropertySource against a Testcontainers
+  # PostgreSQL instance (see 06-testing.md). Anything set here would be dead config.
+  jpa:
+    show-sql: false
+
+  flyway:
+    clean-disabled: false # allow @Sql / Flyway clean between test classes if needed
+
+# Prevents the idempotency clean-up job and any other @Scheduled work from firing mid-test
+# and racing test assertions. Re-enable per-test with @TestPropertySource if a specific
+# test needs to exercise the scheduler.
+spring.task.scheduling.enabled: false
+
+logging:
+  level:
+    com.bowt.backend.orderprocessing: INFO
+    org.testcontainers: INFO

@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:15
     environment:
+      # Dev-only credentials, intentionally hardcoded and matched to application-local.yml.
+      # Never reuse these values outside local development — see NFR-6 in 05-api.md.
       POSTGRES_DB: orderprocessing
       POSTGRES_USER: appuser
       POSTGRES_PASSWORD: secret
@@ -14,6 +16,25 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  # Added: 00-overview.md § TR-2 specifies docker-compose runs "local PostgreSQL and Redis".
+  # Redis is the L2 cache in PER-4 (03-performance.md) — cache-aside pattern for inventory
+  # snapshots, versioned keys (inventory:{productId}:{version}). Marked as a Phase 3 bonus
+  # feature in the requirements, but the dev environment should still be able to reach it
+  # without an ad-hoc `docker run` — that's the whole point of having it in compose.
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    # No volume: this is a cache, not a store of record. Losing it on restart is correct
+    # behaviour (cache-aside falls through to PostgreSQL on miss) — do not add persistence
+    # here; it would mask cache-invalidation bugs during development.
 
 volumes:
   pgdata:
