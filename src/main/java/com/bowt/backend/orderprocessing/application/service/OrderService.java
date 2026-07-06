@@ -104,8 +104,6 @@ public class OrderService implements CreateOrderUseCase, QueryOrderUseCase, Canc
             throw new InsufficientInventoryException("Insufficient stock for: " + shortage, 0);
         }
 
-        order.transitionTo(OrderStatus.PENDING_PAYMENT);
-
         try {
             // P5: own REQUIRES_NEW + REPEATABLE_READ transaction — commits
             // independently of this method's transaction.
@@ -116,6 +114,8 @@ public class OrderService implements CreateOrderUseCase, QueryOrderUseCase, Canc
             orderRepository.save(order);
             throw new InsufficientInventoryException("Concurrent reservation conflict", 0);
         }
+
+        order.transitionTo(OrderStatus.PENDING_PAYMENT);
 
         try {
             PaymentGateway.PaymentResult result = paymentService.authorize(
