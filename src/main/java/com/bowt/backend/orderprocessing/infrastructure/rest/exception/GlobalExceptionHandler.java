@@ -2,7 +2,7 @@ package com.bowt.backend.orderprocessing.infrastructure.rest.exception;
 
 import com.bowt.backend.orderprocessing.domain.exception.InsufficientInventoryException;
 import com.bowt.backend.orderprocessing.domain.exception.InvalidOrderStateException;
-import com.bowt.backend.orderprocessing.domain.exception.PaymentFailedException;
+import com.bowt.backend.orderprocessing.application.exception.PaymentFailedException;
 import com.bowt.backend.orderprocessing.domain.exception.ProductNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;

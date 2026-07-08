@@ -11,7 +11,7 @@ import com.bowt.backend.orderprocessing.application.port.out.ProductRepository;
 import com.bowt.backend.orderprocessing.application.util.OrderIdGenerator;
 import com.bowt.backend.orderprocessing.domain.event.OrderEvent;
 import com.bowt.backend.orderprocessing.domain.exception.InsufficientInventoryException;
-import com.bowt.backend.orderprocessing.domain.exception.PaymentFailedException;
+import com.bowt.backend.orderprocessing.application.exception.PaymentFailedException;
 import com.bowt.backend.orderprocessing.domain.exception.ProductNotFoundException;
 import com.bowt.backend.orderprocessing.domain.factory.OrderFactory;
 import com.bowt.backend.orderprocessing.domain.model.Order;

@@ -3,7 +3,7 @@ package com.bowt.backend.orderprocessing.application.service;
 import com.bowt.backend.orderprocessing.application.port.out.PaymentGateway;
 import com.bowt.backend.orderprocessing.application.port.out.PaymentGateway.PaymentRequest;
 import com.bowt.backend.orderprocessing.application.port.out.PaymentGateway.PaymentResult;
-import com.bowt.backend.orderprocessing.domain.exception.PaymentFailedException;
+import com.bowt.backend.orderprocessing.application.exception.PaymentFailedException;
 import com.bowt.backend.orderprocessing.domain.model.Money;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;

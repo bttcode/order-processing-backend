@@ -1,4 +1,4 @@
-package com.bowt.backend.orderprocessing.domain.exception;
+package com.bowt.backend.orderprocessing.application.exception;
 
 public class PaymentFailedException extends RuntimeException {
     public PaymentFailedException(String reason) {
