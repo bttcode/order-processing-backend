@@ -5,11 +5,13 @@ import com.bowt.backend.orderprocessing.domain.model.OrderItem;
 import com.bowt.backend.orderprocessing.domain.model.ShippingAddress;
 import com.bowt.backend.orderprocessing.domain.model.enumeration.OrderType;
 import com.bowt.backend.orderprocessing.domain.model.enumeration.PaymentMethod;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+@Component
 public class OrderFactory {
 
     private static final int MAX_EXPRESS_LINE_ITEMS = 10;
