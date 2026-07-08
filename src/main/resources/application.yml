@@ -64,6 +64,12 @@ payment:
   mock:
     failure-rate: 0.0
 
+notification:
+  mock:
+    failure-rate-percent: 2
+    min-latency-ms: 10
+    max-latency-ms: 40
+
 idempotency:
   cleanup:
     cron: "0 0 * * * *" # hourly — see IdempotencyCleanupJob, OI-6
