@@ -27,7 +27,7 @@ public class OrderJpaAdapter implements OrderRepository {
 
     @Override
     public Optional<Order> findById(UUID publicId) {
-        return jpaOrderRepo.findByPublicId(publicId).map(mapper::toDomain);
+        return jpaOrderRepo.findWithItemsById(publicId).map(mapper::toDomain);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class OrderJpaAdapter implements OrderRepository {
         Map<String, ProductEntity> productsByBusinessId = resolveProductEntities(order);
 
         Optional<OrderEntity> existing = order.getId() != null
-                ? jpaOrderRepo.findEntityByPublicId(order.getId()) // no JOIN FETCH
+                ? jpaOrderRepo.findEntityById(order.getId()) // no JOIN FETCH
                 : Optional.empty();
 
         OrderEntity entity;
